@@ -11,3 +11,4 @@ android.ndk = 25b
 android.archs = arm64-v8a
 android.sdk_path = 
 android.ndk_path = 
+log_level = 2
