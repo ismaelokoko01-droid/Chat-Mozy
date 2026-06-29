@@ -1,21 +1,17 @@
 name: Build APK
+
 on: [push]
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython
-
       - name: Build with Buildozer
-        run: buildozer android debug
-        
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          command: buildozer android debug
+        env:
+          BUILDOZER_ALLOW_REMOVE: 1
+          
