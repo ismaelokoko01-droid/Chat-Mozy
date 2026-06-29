@@ -1,8 +1,6 @@
 name: Build APK
 
-on:
-  push:
-    branches: [ "main" ]
+on: [push]
 
 jobs:
   build:
@@ -14,12 +12,4 @@ jobs:
         uses: ArtemSBulgakov/buildozer-action@v1
         with:
           command: buildozer android debug
-        env:
-          BUILDOZER_ALLOW_REMOVE: 1
-          
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: package
-          path: bin/*.apk
           
