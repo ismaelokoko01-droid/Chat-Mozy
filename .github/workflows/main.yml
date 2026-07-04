@@ -11,15 +11,18 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip
           sudo apt install -y --fix-missing libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
+          
           pip3 install --user --upgrade buildozer
           
-          # Force l'acceptation des licences Android SDK
-          mkdir -p $HOME/.android
-          touch $HOME/.android/repositories.cfg
-          # Utilise le sdkmanager pour accepter toutes les licences
-          yes | sdkmanager --licenses > /dev/null || true
+          # Installation forcée des outils spécifiques pour éviter le conflit de licence
+          # On installe le SDK command line tools et on accepte les licences
+          mkdir -p $HOME/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+          unzip tools.zip -d $HOME/cmdline-tools
+          export PATH=$PATH:$HOME/cmdline-tools/cmdline-tools/bin
           
-          # Lancement de la compilation
+          yes | sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "build-tools;33.0.1" "platforms;android-33"
+          
           if ! buildozer android debug; then
             buildozer android clean
             buildozer android debug
