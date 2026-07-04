@@ -55,7 +55,7 @@ ScreenManager:
     MDScreen:
         md_bg_color: 1, 1, 1, 1
         Image:
-            source: 'aaaaa/logo.png'
+            source: 'logo.png'
             allow_stretch: True
             keep_ratio: True
 
@@ -129,7 +129,7 @@ ScreenManager:
                 spacing: "10dp"
                 padding: ["50dp", 0, 0, 0]
                 Image:
-                    source: 'aaaaa/logo.png'
+                    source: 'logo.png'
                     size_hint: None, None
                     size: "35dp", "35dp"
                 MDLabel:
@@ -210,7 +210,7 @@ class FipsApp(MDApp):
         liste.clear_widgets()
         for nom in messages_data.keys():
             item = OneLineAvatarListItem(text=nom)
-            item.add_widget(ImageLeftWidget(source='aaaaa/logo.png'))
+            item.add_widget(ImageLeftWidget(source='logo.png'))
             item.on_release = lambda n=nom: self.entrer_discussion(n)
             liste.add_widget(item)
 
