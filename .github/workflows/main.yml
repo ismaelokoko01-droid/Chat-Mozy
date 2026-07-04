@@ -10,7 +10,8 @@ jobs:
         env:
           BUILDOZER_ALLOW_ROOT: '1'
         run: |
-          buildozer android debug
+          # La commande 'yes' envoie automatiquement 'y' à toutes les questions posées
+          yes | buildozer android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
