@@ -5,14 +5,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Build with Buildozer
+      - name: Build with Smart Buildozer
         run: |
           sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip
+          sudo apt install -y --fix-missing libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
           pip3 install --user --upgrade buildozer
-          buildozer android debug
-          
+          if ! buildozer android debug; then
+            buildozer android clean
+            buildozer android debug
+          fi
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
