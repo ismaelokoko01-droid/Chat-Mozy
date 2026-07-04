@@ -1,44 +1,23 @@
 [app]
-
-# (str) Title of your application
 title = Fips App
-
-# (str) Package name
 package.name = fipsapp
+package.domain = org.fips
+source.include_exts = py,kv,png
+source.dir = .
+version = 1.0.0
+requirements = python3,kivy,kivymd,kvdroid,pillow
 
-# (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+# Pointage direct à la racine
+presplash.filename = %(source.dir)s/logo.png
+icon.filename = %(source.dir)s/logo.png
 
-# (str) Source code where the main.py live
-source.include_exts = py,kv
-
-# (list) Source files to include (omit to include all the files)
-source.include_patterns = assets/*,images/*.png
-
-# (str) Application versioning
-version = 0.1
-
-# (list) Application requirements
-requirements = python3,kivy,kivymd
-
-# (str) Presplash of the application
-# presplash.filename = %(source.dir)s/logo.png
-
-# (str) Icon of the application
-# icon.filename = %(source.dir)s/logo.png
-
-# (str) Supported orientations (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
-
-# (list) Permissions
-android.permissions = INTERNET
-
-# (int) Target Android API
+android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 android.api = 33
-
-# (int) Minimum API required
 android.minapi = 21
+android.ndk = 25b
+android.archs = arm64-v8a, armeabi-v7a
 
 [buildozer]
-# (int) Log level (0 = error only, 1 = info, 2 = debug)
 log_level = 2
+warn_on_root = 1
