@@ -3,31 +3,12 @@ on: push
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: kivy/buildozer:latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Build with Smart Buildozer
+      - name: Build APK
         run: |
-          sudo apt update
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip
-          sudo apt install -y --fix-missing libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          
-          pip3 install --user --upgrade buildozer
-          
-          # Installation forcée des outils spécifiques pour éviter le conflit de licence
-          # On installe le SDK command line tools et on accepte les licences
-          mkdir -p $HOME/cmdline-tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-          unzip tools.zip -d $HOME/cmdline-tools
-          export PATH=$PATH:$HOME/cmdline-tools/cmdline-tools/bin
-          
-          yes | sdkmanager --sdk_root=$HOME/.buildozer/android/platform/android-sdk "build-tools;33.0.1" "platforms;android-33"
-          
-          if ! buildozer android debug; then
-            buildozer android clean
-            buildozer android debug
-          fi
-          
+          buildozer android debug
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
