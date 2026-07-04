@@ -1,5 +1,9 @@
 import random
 import string
+import threading
+from flask import Flask, jsonify
+import requests
+
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.lang import Builder
@@ -11,15 +15,23 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDIconButton, MDFloatingActionButton
 from kivymd.uix.list import OneLineAvatarListItem, ImageLeftWidget
 from kivymd.uix.card import MDCard
-from kivymd.uix.label import MDLabel
-from kivymd.uix.textfield import MDTextField
 from kivy.properties import StringProperty, BooleanProperty
 from kivy.metrics import dp
+
+app = Flask(__name__)
+
+@app.route('/recevoir', methods=['GET'])
+def recevoir():
+    return jsonify({"messages": messages_data.get(FipsApp.contact_actuel, [])})
+
+def run_server():
+    app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False)
+
+threading.Thread(target=run_server, daemon=True).start()
 
 Window.softinput_mode = "below_target"
 store = JsonStore('user_data.json')
 
-# Base de données des codes pour l'ajout
 annuaire_codes = {"1234": "Brother Canada", "5678": "Ami Manga"}
 
 messages_data = {
@@ -238,7 +250,7 @@ class FipsApp(MDApp):
             self.root.get_screen('discussion').ids.input_message.text = ""
 
     def entrer_discussion(self, nom_contact):
-        self.contact_actuel = nom_contact
+        FipsApp.contact_actuel = nom_contact
         self.root.get_screen('discussion').ids.titre_contact.text = nom_contact
         conteneur = self.root.get_screen('discussion').ids.conteneur_messages
         conteneur.clear_widgets()
@@ -252,7 +264,6 @@ class FipsApp(MDApp):
         self.root.current = 'accueil'
 
     def verifier_et_sauvegarder(self, nom, prenom, email, code):
-        # Sécurité ajoutée
         if not nom.strip() or not prenom.strip() or not email.strip() or not code.strip():
             self.afficher_erreur("Tous les champs sont obligatoires.")
             return
@@ -317,4 +328,4 @@ class FipsApp(MDApp):
 
 if __name__ == '__main__':
     FipsApp().run()
-    
+            
