@@ -1,22 +1,27 @@
-name: Build Android APK
-on: [push]
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 
-      image: kivy/buildozer:latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Build with Buildozer
+        uses: yaananth/kivy-buildozer@v4
+        with:
+          buildozer_version: latest
         env:
-          BUILDOZER_ALLOW_ROOT: 1
-        run: |
-          yes | buildozer android debug
-      
-      - name: Upload APK
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mon-application-apk
+          name: FipsApp_APK
           path: bin/*.apk
           
