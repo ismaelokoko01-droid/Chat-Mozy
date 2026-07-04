@@ -55,7 +55,7 @@ ScreenManager:
     MDScreen:
         md_bg_color: 1, 1, 1, 1
         Image:
-            source: 'aaaaa/logo.png'
+            source: 'logo.png'
             allow_stretch: True
             keep_ratio: True
 
