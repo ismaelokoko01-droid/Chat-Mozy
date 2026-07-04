@@ -11,13 +11,13 @@ jobs:
           sudo apt update
           sudo apt install -y git zip unzip openjdk-17-jdk python3-pip
           sudo apt install -y --fix-missing libncurses5-dev libncursesw5-dev cmake libffi-dev libssl-dev
-          
-          # Installation et mise à jour de buildozer
           pip3 install --user --upgrade buildozer
           
-          # Acceptation automatique des licences Android SDK
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          yes | sdkmanager --licenses || true
+          # Force l'acceptation des licences Android SDK
+          mkdir -p $HOME/.android
+          touch $HOME/.android/repositories.cfg
+          # Utilise le sdkmanager pour accepter toutes les licences
+          yes | sdkmanager --licenses > /dev/null || true
           
           # Lancement de la compilation
           if ! buildozer android debug; then
