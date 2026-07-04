@@ -6,7 +6,7 @@ source.include_exts = py,kv,png
 source.dir = .
 version = 1.0.0
 # Ajout des dépendances critiques
-requirements = python3,kivy,kivymd,pillow,urllib3
+requirements = python3,kivy,kivymd,pillow,urllib3,flask,requests
 presplash.filename = %(source.dir)s/logo.png
 icon.filename = %(source.dir)s/logo.png
 orientation = portrait
