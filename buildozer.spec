@@ -6,11 +6,8 @@ source.include_exts = py,kv,png
 source.dir = .
 version = 1.0.0
 requirements = python3,kivy,kivymd,kvdroid,pillow
-
-# Pointage direct à la racine
 presplash.filename = %(source.dir)s/logo.png
 icon.filename = %(source.dir)s/logo.png
-
 orientation = portrait
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 android.api = 33
