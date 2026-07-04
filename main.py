@@ -1,7 +1,6 @@
 import random
 import string
 import requests
-import json
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
@@ -10,19 +9,17 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.dialog import MDDialog
-from kivymd.uix.button import MDFlatButton, MDIconButton, MDFloatingActionButton
-from kivymd.uix.list import OneLineAvatarListItem, ImageLeftWidget
+from kivymd.uix.button import MDFlatButton, MDIconButton
+from kivymd.uix.list import OneLineAvatarListItem
 from kivymd.uix.card import MDCard
 from kivymd.uix.textfield import MDTextField
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.label import MDLabel
 from kivy.properties import StringProperty, BooleanProperty
 from kivy.metrics import dp
 
 FIREBASE_URL = "https://fipsapp-ffda0-default-rtdb.firebaseio.com/"
-Window.softinput_mode = "below_target"
 store = JsonStore('user_data.json')
-
-annuaire_codes = {"1234": "Brother Canada", "5678": "Ami Manga"}
-messages_data = {"Brother Canada": [], "Ami Manga": []}
 
 KV = '''
 <BulleMessage>:
@@ -37,21 +34,12 @@ KV = '''
         id: label
         text: root.message
         text_size: (dp(230), None)
-        halign: "left"
         color: (1, 1, 1, 1) if root.est_envoyeur else (0, 0, 0, 1)
 
 ScreenManager:
-    PageDemarrage:
     PageConnexion:
     PageAccueil:
     PageDiscussion:
-
-<PageDemarrage>:
-    name: 'demarrage'
-    MDScreen:
-        md_bg_color: 1, 1, 1, 1
-        Image:
-            source: 'logo.png'
 
 <PageConnexion>:
     name: 'connexion'
@@ -59,23 +47,19 @@ ScreenManager:
         orientation: 'vertical'
         padding: "20dp"
         spacing: "10dp"
+        MDLabel:
+            text: "Bienvenue sur FipsApp"
+            halign: "center"
         MDTextField:
             id: nom
             hint_text: "Nom"
         MDTextField:
             id: prenom
             hint_text: "Prénom"
-        MDTextField:
-            id: email
-            hint_text: "Email"
-        MDTextField:
-            id: code
-            hint_text: "Code secret"
-            password: True
         MDFloatingActionButton:
             icon: "arrow-right"
             pos_hint: {"center_x": .5}
-            on_release: app.verifier_et_sauvegarder(nom.text, prenom.text, email.text, code.text)
+            on_release: app.verifier_et_sauvegarder(nom.text, prenom.text)
 
 <PageAccueil>:
     name: 'accueil'
@@ -98,7 +82,6 @@ ScreenManager:
         orientation: 'vertical'
         MDTopAppBar:
             left_action_items: [["arrow-left", lambda x: app.retour_accueil()]]
-            title: ""
             id: bar_discussion
         ScrollView:
             MDBoxLayout:
@@ -120,105 +103,74 @@ class BulleMessage(MDCard):
     message = StringProperty()
     est_envoyeur = BooleanProperty(True)
 
-class PageDemarrage(Screen): pass
-class PageConnexion(Screen): pass
-class PageAccueil(Screen): pass
-class PageDiscussion(Screen): pass
-
 class FipsApp(MDApp):
     contact_actuel = ""
 
     def build(self):
-        self.root = Builder.load_string(KV)
-        self.root.current = 'demarrage'
-        Clock.schedule_once(self.verifier_session, 3)
-        return self.root
+        return Builder.load_string(KV)
 
-    def verifier_session(self, dt):
+    def on_start(self):
         if store.exists('user'):
             self.root.current = 'accueil'
-            self.charger_contacts()
         else:
             self.root.current = 'connexion'
 
-    def obtenir_id_discussion(self, contact):
-        nom_moi = store.get('user')['nom']
-        noms = sorted([nom_moi, contact])
-        return f"{noms[0]}_{noms[1]}"
-
-    def charger_contacts(self):
-        liste = self.root.get_screen('accueil').ids.conteneur_contacts
-        liste.clear_widgets()
-        for nom in messages_data.keys():
-            item = OneLineAvatarListItem(text=nom)
-            item.on_release = lambda n=nom: self.entrer_discussion(n)
-            liste.add_widget(item)
-
-    def envoyer_message(self, texte):
-        if texte.strip() and self.contact_actuel:
-            id_chat = self.obtenir_id_discussion(self.contact_actuel)
-            payload = {"message": texte, "expediteur": store.get('user')['nom']}
-            requests.post(f"{FIREBASE_URL}/discussions/{id_chat}.json", json=payload)
-            self.root.get_screen('discussion').ids.input_message.text = ""
-
-    def verifier_nouveaux_messages(self, dt):
-        if self.contact_actuel:
-            id_chat = self.obtenir_id_discussion(self.contact_actuel)
-            try:
-                reponse = requests.get(f"{FIREBASE_URL}/discussions/{id_chat}.json")
-                if reponse.status_code == 200 and reponse.json():
-                    conteneur = self.root.get_screen('discussion').ids.conteneur_messages
-                    conteneur.clear_widgets()
-                    data = reponse.json()
-                    for key in data:
-                        msg = data[key]
-                        conteneur.add_widget(BulleMessage(message=msg['message'], est_envoyeur=(msg['expediteur'] == store.get('user')['nom'])))
-            except: pass
-
-    def entrer_discussion(self, nom_contact):
-        self.contact_actuel = nom_contact
-        self.root.get_screen('discussion').ids.bar_discussion.title = nom_contact
-        self.root.current = 'discussion'
-        Clock.schedule_interval(self.verifier_nouveaux_messages, 2)
-
-    def retour_accueil(self):
-        Clock.unschedule(self.verifier_nouveaux_messages)
-        self.root.current = 'accueil'
-
-    def verifier_et_sauvegarder(self, nom, prenom, email, code):
+    def verifier_et_sauvegarder(self, nom, prenom):
         code_fips = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        store.put('user', nom=nom, prenom=prenom, email=email, code=code, code_fips=code_fips)
+        user_data = {'nom': nom, 'prenom': prenom, 'code_fips': code_fips}
+        store.put('user', **user_data)
+        # Enregistrement global dans Firebase
+        requests.put(f"{FIREBASE_URL}/utilisateurs/{code_fips}.json", json=user_data)
         self.root.current = 'accueil'
-        self.charger_contacts()
+
+    def action_nouvelle_discussion(self):
+        self.input_field = MDTextField(hint_text="Entrer le Code FIPS")
+        self.label_info = MDLabel(text="Nom: -", theme_text_color="Secondary")
+        box = MDBoxLayout(orientation='vertical', adaptive_height=True, spacing="10dp")
+        box.add_widget(self.input_field)
+        box.add_widget(self.label_info)
+        
+        self.dialog = MDDialog(title="Ajouter par Code", type="custom", content_cls=box,
+            buttons=[
+                MDFlatButton(text="VÉRIFIER", on_release=lambda x: self.verifier_code()),
+                MDFlatButton(text="INVITER", on_release=lambda x: self.envoyer_invitation())
+            ])
+        self.dialog.open()
+
+    def verifier_code(self):
+        code = self.input_field.text.upper()
+        res = requests.get(f"{FIREBASE_URL}/utilisateurs/{code}.json").json()
+        self.label_info.text = f"Trouvé : {res['nom']}" if res else "Code inconnu"
+
+    def envoyer_invitation(self):
+        code = self.input_field.text.upper()
+        res = requests.get(f"{FIREBASE_URL}/utilisateurs/{code}.json").json()
+        if res:
+            nom_ami = res['nom']
+            requests.post(f"{FIREBASE_URL}/demandes/{nom_ami}.json", json={"de": store.get('user')['nom']})
+            self.dialog.dismiss()
 
     def afficher_profil(self):
         user = store.get('user')
-        dialog = MDDialog(title="Profil", text=f"Nom: {user['nom']}\nCode: {user['code_fips']}")
-        dialog.open()
+        MDDialog(title="Mon Profil", text=f"Nom: {user['nom']}\nCode FIPS: {user['code_fips']}").open()
 
-    def ouvrir_menu(self, button):
-        menu = MDDropdownMenu(caller=button, items=[{"text": "Déconnexion", "on_release": lambda: self.deconnecter()}], width_mult=3)
-        menu.open()
-
-    def action_nouvelle_discussion(self):
-        self.input_field = MDTextField(hint_text="Entrer le Code Fips")
-        self.dialog = MDDialog(title="Ajouter contact", type="custom", content_cls=self.input_field,
-            buttons=[MDFlatButton(text="AJOUTER", on_release=lambda x: self.valider_ajout_contact())])
-        self.dialog.open()
-
-    def valider_ajout_contact(self):
-        code = self.input_field.text.upper()
-        if code in annuaire_codes:
-            nom = annuaire_codes[code]
-            if nom not in messages_data:
-                messages_data[nom] = []
-                self.charger_contacts()
-        self.dialog.dismiss()
+    def ouvrir_menu(self, btn):
+        MDDropdownMenu(caller=btn, items=[{"text": "Déconnexion", "on_release": self.deconnecter}]).open()
 
     def deconnecter(self):
         store.delete('user')
         self.root.current = 'connexion'
 
+    def envoyer_message(self, texte):
+        if texte and self.contact_actuel:
+            nom_moi = store.get('user')['nom']
+            id_chat = "".join(sorted([nom_moi, self.contact_actuel]))
+            requests.post(f"{FIREBASE_URL}/discussions/{id_chat}.json", json={"message": texte, "expediteur": nom_moi})
+            self.root.get_screen('discussion').ids.input_message.text = ""
+
+    def retour_accueil(self):
+        self.root.current = 'accueil'
+
 if __name__ == '__main__':
     FipsApp().run()
-        
+    
