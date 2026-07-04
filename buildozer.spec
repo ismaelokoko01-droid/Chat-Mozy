@@ -9,6 +9,9 @@ package.name = fips
 # (str) Nom du domaine
 package.domain = org.fips
 
+# (str) Dossier source du code
+source.dir = .
+
 # (str) Fichier principal
 source.main = main.py
 
@@ -38,5 +41,6 @@ android.api = 33
 android.minapi = 21
 
 [buildozer]
+# (int) Log level (2 = debug, 1 = info, 0 = warning/error)
 log_level = 2
 warn_on_root = 1
