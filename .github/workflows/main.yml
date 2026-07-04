@@ -9,7 +9,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build with Buildozer
+        env:
+          BUILDOZER_ALLOW_ROOT: 1
         run: |
-          # On utilise 'yes' pour répondre automatiquement 'y' à toutes les questions de Buildozer
           yes | buildozer android debug
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: mon-application-apk
+          path: bin/*.apk
           
