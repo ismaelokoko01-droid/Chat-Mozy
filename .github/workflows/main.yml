@@ -1,27 +1,21 @@
 name: Build APK
-
-on:
-  push:
-    branches:
-      - main
-
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
+      
       - name: Build with Buildozer
-        uses: yaananth/kivy-buildozer@v4
-        with:
-          buildozer_version: latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK artifact
+        run: |
+          sudo apt update
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip3 install --user --upgrade buildozer
+          buildozer android debug
+          
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FipsApp_APK
+          name: package
           path: bin/*.apk
           
