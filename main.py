@@ -1,7 +1,7 @@
 import random
 import string
 from kivymd.app import MDApp
-from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
 from kivy.storage.jsonstore import JsonStore
 from kivy.clock import Clock
@@ -9,7 +9,7 @@ from kivy.core.window import Window
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDIconButton, MDFloatingActionButton
-from kivymd.uix.list import OneLineAvatarListItem, ImageLeftWidget
+from kivymd.uix.list import OneLineIconListItem, IconLeftWidget
 from kivymd.uix.card import MDCard
 from kivymd.uix.label import MDLabel
 from kivymd.uix.textfield import MDTextField
@@ -19,7 +19,6 @@ from kivy.metrics import dp
 Window.softinput_mode = "below_target"
 store = JsonStore('user_data.json')
 
-# Base de données des codes pour l'ajout
 annuaire_codes = {"1234": "Brother Canada", "5678": "Ami Manga"}
 
 messages_data = {
@@ -54,10 +53,10 @@ ScreenManager:
     name: 'demarrage'
     MDScreen:
         md_bg_color: 1, 1, 1, 1
-        Image:
-            source: 'logo.png'
-            allow_stretch: True
-            keep_ratio: True
+        MDLabel:
+            text: "Fips App"
+            halign: "center"
+            font_style: "H3"
 
 <PageConnexion>:
     name: 'connexion'
@@ -94,7 +93,6 @@ ScreenManager:
         MDTopAppBar:
             title: "Fips App"
             right_action_items: [["account-circle", lambda x: app.afficher_profil()], ["dots-vertical", lambda x: app.ouvrir_menu(x)]]
-        
         MDBoxLayout:
             size_hint_y: None
             height: "60dp"
@@ -105,11 +103,9 @@ ScreenManager:
                 mode: "round"
                 icon_left: "magnify"
                 on_text: app.filtrer_contacts(self.text)
-        
         ScrollView:
             MDList:
                 id: conteneur_contacts
-    
     MDFloatingActionButton:
         icon: "plus"
         pos_hint: {"right": 0.95, "bottom": 0.05}
@@ -127,11 +123,9 @@ ScreenManager:
                 pos_hint: {"center_y": .5}
                 adaptive_size: True
                 spacing: "10dp"
-                padding: ["50dp", 0, 0, 0]
-                Image:
-                    source: 'logo.png'
-                    size_hint: None, None
-                    size: "35dp", "35dp"
+                padding: ["20dp", 0, 0, 0]
+                MDIcon:
+                    icon: "account"
                 MDLabel:
                     id: titre_contact
                     text: ""
@@ -146,29 +140,16 @@ ScreenManager:
                 adaptive_height: True
                 padding: "10dp"
                 spacing: "10dp"
-        
         MDBoxLayout:
             size_hint_y: None
             height: "70dp"
             padding: "10dp"
             spacing: "10dp"
-            canvas.before:
-                Color:
-                    rgba: 0.95, 0.95, 0.95, 1
-                RoundedRectangle:
-                    pos: self.pos
-                    size: self.size
-                    radius: [30, 30, 30, 30]
             MDTextField:
                 id: input_message
                 hint_text: "Message..."
-                mode: "fill"
-                fill_color_normal: 0, 0, 0, 0
-                line_color_normal: 0, 0, 0, 0
             MDIconButton:
                 icon: "send"
-                theme_icon_color: "Custom"
-                icon_color: (0.6, 0.4, 0.9, 1)
                 on_release: app.envoyer_message(input_message.text)
 '''
 
@@ -189,7 +170,7 @@ class FipsApp(MDApp):
         self.theme_cls.primary_palette = "DeepPurple"
         self.root = Builder.load_string(KV)
         self.root.current = 'demarrage'
-        Clock.schedule_once(self.verifier_session, 3)
+        Clock.schedule_once(self.verifier_session, 2)
         return self.root
 
     def verifier_session(self, dt):
@@ -209,8 +190,8 @@ class FipsApp(MDApp):
         liste = self.root.get_screen('accueil').ids.conteneur_contacts
         liste.clear_widgets()
         for nom in messages_data.keys():
-            item = OneLineAvatarListItem(text=nom)
-            item.add_widget(ImageLeftWidget(source='logo.png'))
+            item = OneLineIconListItem(text=nom)
+            item.add_widget(IconLeftWidget(icon='account'))
             item.on_release = lambda n=nom: self.entrer_discussion(n)
             liste.add_widget(item)
 
@@ -218,16 +199,8 @@ class FipsApp(MDApp):
         if store.exists('user'):
             user = store.get('user')
             code = user.get('code_fips', 'N/A')
-            info = f"Nom : {user['nom']}\nPrénom : {user['prenom']}\nCode Fips : {code}"
-            if not self.dialog:
-                self.dialog = MDDialog(
-                    title="Ton Profil",
-                    text=info,
-                    buttons=[MDFlatButton(text="OK", on_release=lambda x: self.dialog.dismiss())],
-                )
-            else:
-                self.dialog.title = "Ton Profil"
-                self.dialog.text = info
+            info = f"Nom : {user['nom']}\nPrénom : {user['prenom']}\nCode : {code}"
+            self.dialog = MDDialog(title="Profil", text=info, buttons=[MDFlatButton(text="OK", on_release=lambda x: self.dialog.dismiss())])
             self.dialog.open()
 
     def envoyer_message(self, texte):
@@ -244,57 +217,31 @@ class FipsApp(MDApp):
         conteneur.clear_widgets()
         for msg in messages_data[nom_contact]:
             conteneur.add_widget(BulleMessage(message=msg, est_envoyeur=True))
-        self.root.transition.duration = 0
         self.root.current = 'discussion'
 
     def retour_accueil(self):
-        self.root.transition.duration = 0
         self.root.current = 'accueil'
 
     def verifier_et_sauvegarder(self, nom, prenom, email, code):
-        # Sécurité ajoutée
-        if not nom.strip() or not prenom.strip() or not email.strip() or not code.strip():
-            self.afficher_erreur("Tous les champs sont obligatoires.")
+        if not all([nom.strip(), prenom.strip(), email.strip(), code.strip()]):
             return
-        if "@" not in email or "." not in email:
-            self.afficher_erreur("Email invalide.")
-            return
-        if not (code.isdigit() and 4 <= len(code) <= 6):
-            self.afficher_erreur("Code doit contenir 4 à 6 chiffres.")
-            return
-        
-        chars = string.ascii_uppercase + string.digits
-        code_fips = ''.join(random.choices(chars, k=6))
+        code_fips = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         store.put('user', nom=nom, prenom=prenom, email=email, code=code, code_fips=code_fips)
         self.charger_contacts()
         self.root.current = 'accueil'
 
-    def afficher_erreur(self, message):
-        dialog = MDDialog(
-            title="Erreur",
-            text=message,
-            buttons=[MDFlatButton(text="OK", on_release=lambda x: dialog.dismiss())],
-        )
-        dialog.open()
-
     def ouvrir_menu(self, button):
-        menu_items = [{"text": "Déconnexion", "on_release": lambda: self.deconnecter()}]
-        self.menu = MDDropdownMenu(caller=button, items=menu_items, width_mult=3)
+        self.menu = MDDropdownMenu(caller=button, items=[{"text": "Déconnexion", "on_release": lambda: self.deconnecter()}], width_mult=3)
         self.menu.open()
-        
+
     def ouvrir_menu_action_rapide(self, button):
-        menu_items = [
-            {"text": "Nouvelle Discussion", "icon": "chat", "on_release": lambda: self.action_nouvelle_discussion()},
-            {"text": "Scanner Code Fips", "icon": "qrcode-scan", "on_release": lambda: print("Scan")},
-            {"text": "Inviter un ami", "icon": "share-variant", "on_release": lambda: print("Invite")}
-        ]
-        self.menu_action = MDDropdownMenu(caller=button, items=menu_items, width_mult=4)
+        self.menu_action = MDDropdownMenu(caller=button, items=[{"text": "Nouvelle Discussion", "icon": "chat", "on_release": lambda: self.action_nouvelle_discussion()}], width_mult=4)
         self.menu_action.open()
 
     def action_nouvelle_discussion(self):
         self.menu_action.dismiss()
-        self.input_field = MDTextField(hint_text="Entrer le Code Fips")
-        self.dialog_ajout = MDDialog(title="Ajouter par Code", type="custom", content_cls=self.input_field,
+        self.input_field = MDTextField(hint_text="Code Fips")
+        self.dialog_ajout = MDDialog(title="Ajouter", type="custom", content_cls=self.input_field,
             buttons=[MDFlatButton(text="ANNULER", on_release=lambda x: self.dialog_ajout.dismiss()),
                      MDFlatButton(text="AJOUTER", on_release=lambda x: self.valider_ajout_contact())])
         self.dialog_ajout.open()
@@ -307,8 +254,6 @@ class FipsApp(MDApp):
                 messages_data[nom_ami] = []
                 self.charger_contacts()
             self.dialog_ajout.dismiss()
-        else:
-            self.afficher_erreur("Code inconnu.")
 
     def deconnecter(self):
         if store.exists('user'): store.delete('user')
@@ -317,3 +262,4 @@ class FipsApp(MDApp):
 
 if __name__ == '__main__':
     FipsApp().run()
+            
