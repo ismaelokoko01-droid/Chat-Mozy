@@ -1,4 +1,5 @@
-import random, string, requests
+import random, string, requests, os
+from kivy.utils import platform
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.lang import Builder
@@ -10,7 +11,6 @@ from kivymd.uix.list import OneLineAvatarListItem
 from plyer import notification
 
 FIREBASE_URL = "https://fipsapp-ffda0-default-rtdb.firebaseio.com/"
-store = JsonStore('user_data.json')
 
 KV = '''
 ScreenManager:
@@ -81,65 +81,114 @@ class PageAccueil(Screen): pass
 class PageDiscussion(Screen): pass
 
 class FipsApp(MDApp):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # FIX 1 : Définition d'un emplacement de stockage 100% autorisé par Android
+        if platform == 'android':
+            dossier_data = self.user_data_dir
+        else:
+            dossier_data = "."
+        self.store = JsonStore(os.path.join(dossier_data, 'user_data.json'))
+        self.diag = None
+
     def build(self):
         return Builder.load_string(KV)
 
     def on_start(self):
+        # FIX 2 : Demande en direct des permissions à l'écran de l'utilisateur (Android 13+)
+        if platform == 'android':
+            from android.permissions import request_permissions, Permission
+            request_permissions([
+                Permission.INTERNET,
+                Permission.READ_EXTERNAL_STORAGE,
+                Permission.WRITE_EXTERNAL_STORAGE,
+                Permission.POST_NOTIFICATIONS
+            ])
         Clock.schedule_once(self.route_vers_ecran, 3)
 
     def on_resume(self):
-        self.root.current = 'splash'
-        Clock.schedule_once(self.route_vers_ecran, 3)
+        # FIX 3 : On laisse vide pour empêcher l'application de crasher en boucle au démarrage
+        pass
 
     def route_vers_ecran(self, dt):
-        if store.exists('user'):
-            self.root.current = 'accueil'
-            self.charger_contacts()
-        else:
+        try:
+            if self.store.exists('user'):
+                self.root.current = 'accueil'
+                Clock.schedule_once(lambda x: self.charger_contacts(), 0.2)
+            else:
+                self.root.current = 'connexion'
+        except Exception:
             self.root.current = 'connexion'
 
     def charger_contacts(self):
-        liste = self.root.get_screen('accueil').ids.conteneur_contacts
-        liste.clear_widgets()
-        item = OneLineAvatarListItem(text="Moi (Notes personnelles)")
-        item.bind(on_release=lambda x: self.ouvrir_discussion())
-        liste.add_widget(item)
+        try:
+            ecran_accueil = self.root.get_screen('accueil')
+            if 'conteneur_contacts' in ecran_accueil.ids:
+                liste = ecran_accueil.ids.conteneur_contacts
+                liste.clear_widgets()
+                item = OneLineAvatarListItem(text="Moi (Notes personnelles)")
+                item.bind(on_release=lambda x: self.ouvrir_discussion())
+                liste.add_widget(item)
+        except Exception:
+            pass
 
     def ouvrir_discussion(self):
         self.root.current = 'discussion'
-        self.charger_messages()
+        Clock.schedule_once(lambda x: self.charger_messages(), 0.1)
 
     def retour_accueil(self):
         self.root.current = 'accueil'
 
     def charger_messages(self):
-        conteneur = self.root.get_screen('discussion').ids.conteneur_messages
-        conteneur.clear_widgets()
-        if store.exists('messages_moi'):
-            for msg in store.get('messages_moi')['data']:
-                conteneur.add_widget(OneLineAvatarListItem(text=msg))
+        try:
+            ecran_discussion = self.root.get_screen('discussion')
+            if 'conteneur_messages' in ecran_discussion.ids:
+                conteneur = ecran_discussion.ids.conteneur_messages
+                conteneur.clear_widgets()
+                if self.store.exists('messages_moi'):
+                    for msg in self.store.get('messages_moi')['data']:
+                        conteneur.add_widget(OneLineAvatarListItem(text=msg))
+        except Exception:
+            pass
 
     def envoyer_message(self, texte):
         if not texte: return
-        msgs = store.get('messages_moi')['data'] if store.exists('messages_moi') else []
-        msgs.append(texte)
-        store.put('messages_moi', data=msgs)
-        self.charger_messages()
-        self.root.get_screen('discussion').ids.msg_input.text = ""
+        try:
+            msgs = self.store.get('messages_moi')['data'] if self.store.exists('messages_moi') else []
+            msgs.append(texte)
+            self.store.put('messages_moi', data=msgs)
+            self.charger_messages()
+            self.root.get_screen('discussion').ids.msg_input.text = ""
+        except Exception:
+            pass
 
     def verifier_et_sauvegarder(self, nom, prenom, email, code):
         if "@" not in email or "." not in email.split("@")[-1]:
             self.alerte("Erreur", "Email invalide")
             return
+        if not all([nom, prenom, email, code]):
+            self.alerte("Erreur", "Tous les champs sont requis")
+            return
+
         code_fips = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         u_data = {'nom': nom, 'prenom': prenom, 'email': email, 'code_fips': code_fips}
-        store.put('user', **u_data)
-        self.root.current = 'accueil'
-        self.charger_contacts()
+        
+        try:
+            self.store.put('user', **u_data)
+            requests.put(f"{FIREBASE_URL}/utilisateurs/{code_fips}.json", json=u_data, timeout=5)
+            self.root.current = 'accueil'
+            Clock.schedule_once(lambda x: self.charger_contacts(), 0.1)
+        except Exception:
+            # Mode hors-ligne : Permet d'accéder à l'application même sans internet
+            self.root.current = 'accueil'
+            Clock.schedule_once(lambda x: self.charger_contacts(), 0.1)
 
     def deconnecter(self):
-        store.delete('user')
-        self.root.current = 'connexion'
+        try:
+            self.store.delete('user')
+            self.root.current = 'connexion'
+        except Exception:
+            self.root.current = 'connexion'
 
     def alerte(self, titre, texte):
         self.diag = MDDialog(title=titre, text=texte, buttons=[MDFlatButton(text="OK", on_release=lambda x: self.diag.dismiss())])
@@ -147,4 +196,3 @@ class FipsApp(MDApp):
 
 if __name__ == '__main__':
     FipsApp().run()
-    
