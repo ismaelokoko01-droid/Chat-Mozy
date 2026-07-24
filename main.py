@@ -95,7 +95,7 @@ ScreenManager:
     name: 'demarrage'
     MDScreen:
         Image:
-            source: 'micro/logo.png'
+            source: 'logo.png'
             allow_stretch: True
             keep_ratio: True
 
@@ -245,7 +245,7 @@ class ZelyphApp(MDApp):
         liste.clear_widgets()
       
         item_moi = OneLineAvatarListItem(text="Moi (Note à soi-même)")
-        item_moi.add_widget(ImageLeftWidget(source='micro/logo.png'))
+        item_moi.add_widget(ImageLeftWidget(source='logo.png'))
         item_moi.on_release = lambda: self.entrer_discussion("Moi", self.mon_code_zelyph)
         liste.add_widget(item_moi)
         
@@ -257,7 +257,7 @@ class ZelyphApp(MDApp):
                 user_info = requests.get(f"{FIREBASE_URL}/users/{code_ami}.json").json()
                 if user_info:
                     nom_affichage = f"{user_info.get('prenom', '')} {user_info.get('nom', '')}".strip()
-                    avatar_url = user_info.get('avatar_url', 'micro/logo.png')
+                    avatar_url = user_info.get('avatar_url', 'logo.png')
                     
                     item = OneLineAvatarListItem(text=nom_affichage)
                     item.add_widget(ImageLeftWidget(source=avatar_url))
@@ -343,7 +343,7 @@ class ZelyphApp(MDApp):
                         text=nom_exp,
                         secondary_text=f"Code: {code_exp}"
                     )
-                    item.add_widget(ImageLeftWidget(source='micro/logo.png'))
+                    item.add_widget(ImageLeftWidget(source='logo.png'))
                     
                     # Clic pour accepter/refuser
                     item.on_release = lambda c=code_exp, n=nom_exp: self.choisir_accepter_refuser(c, n)
