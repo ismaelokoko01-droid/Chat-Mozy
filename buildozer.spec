@@ -1,7 +1,7 @@
 [app]
-title = Fips App
-package.name = fipsapp
-package.domain = org.fips
+title = zelyph App
+package.name = zelyphapp
+package.domain = org.zelyph
 source.include_exts = py,kv,png
 source.dir = .
 version = 1.0.0
