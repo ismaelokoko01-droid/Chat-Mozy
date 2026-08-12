@@ -1,34 +1,37 @@
-name: Build APK
+name: Build Android APK
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install system dependencies for ZBar / Camera
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
         run: |
-          apt-get update && apt-get install -y libzbar-dev libzbar0
+          sudo apt-get update
+          sudo apt-get install -y build-essential ccache git libffi-dev libssl-dev libltdl-dev unzip zip zlib1g-dev openjdk-17-jdk autoconf libtool pkg-config
+          pip install --upgrade pip setuptools
+          pip install buildozer cython==0.29.36
 
       - name: Build APK with Buildozer
-        env:
-          BUILDOZER_ALLOW_ROOT: '1'
         run: |
-          yes | buildozer android debug
+          buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ZelyphApp-Debug-APK
+          name: ZelyphApp-APK
           path: bin/*.apk
           
